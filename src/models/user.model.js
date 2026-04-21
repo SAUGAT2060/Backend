@@ -1,0 +1,93 @@
+import mongoose,{Schema} from "mongoose";
+import jwt from 'jsonwebtoken'
+import bcrypt from 'bcrypt'
+const userSchema = new Schema ({
+  username:{
+      type: String,
+      required: true,
+      unique:true,
+      lowercase:true,
+      trim:true,
+      index:true
+  },
+   email:{
+      type: String,
+      required: true,
+      unique:true,
+      lowercase:true,
+      trim:true,
+  },
+  fullName:{
+      type: String,
+      required: true,
+      trim:true,
+      index:true
+  },
+  avatar:{
+    type:String, //Cloudinary URL for the avatar
+    required:true,
+
+  },
+  coverImage:{
+    type:String, //Cloudinary URL for the avatar
+  },
+  watchHistory:[
+      {
+        type:Schema.Types.ObjectId,
+        ref:"Video"
+      }
+  ],
+  password:{
+    type: String,
+    required:[true,'Password is required']
+  },
+  refreshToken:{
+    type:String
+  }
+},{timestamps:true})
+
+//Using pre Hook to perform password hashing whenever we get an event of save 
+
+userSchema.pre("save", async function(next){
+  //Checking if the password filed isn't modified then we return next directly
+  if(!this.isModified("password")) return next();
+   
+// Hashing password using bcrypt.hash method
+  this.password = bcrypt.hash(this.password, 10)
+  next()
+
+})
+
+//Creating a custom method to check if the password is Correct
+userSchema.methods.isPasswordCorrect = async function (password){
+ return await  bcrypt.compare(password , this.password)
+}
+
+//Generating ACCESS TOKEN(JWT token) 
+userSchema.methods.generateAccessToken = function (){
+ return jwt.sign(
+    {
+      _id:this._id,
+      email:this.email,
+      username:this.username,
+      fullName:this.fullName
+
+    },
+    process.env.ACCESS_TOKEN_SECRET,{
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+    }
+  )
+}
+
+//Generating REFRESH TOKEN(JWT token) 
+userSchema.methods.generateRefreshToken = function (){
+  return jwt.sign(
+    {
+      _id:this._id,
+    },
+    process.env.REFRESH_TOKEN_SECRET,{
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+    }
+  )
+}
+export const User = mongoose.model("User", userSchema)
