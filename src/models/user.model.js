@@ -48,14 +48,13 @@ const userSchema = new Schema ({
 
 //Using pre Hook to perform password hashing whenever we get an event of save 
 
-userSchema.pre("save", async function(next){
-  //Checking if the password filed isn't modified then we return next directly
-  if(!this.isModified("password")) return next();
-   
-// Hashing password using bcrypt.hash method
-  this.password = await bcrypt.hash(this.password, 10)
-  next()
+userSchema.pre("save", async function () {          // remove next here
+    if(!this.isModified("password")) return;        // remove next() here
+    this.password = await bcrypt.hash(this.password, 10)
+                                                    // remove next() here 
 
+
+                                                    //because the new version of monggoose 
 })
 
 //Creating a custom method to check if the password is Correct

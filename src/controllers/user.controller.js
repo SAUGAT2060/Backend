@@ -20,7 +20,7 @@ const registerUser = asyncHandler( async (req,res)=>{
 
   
   const {fullName,email,username,password } = req.body
-  console.log("Username:",username);
+  // console.log("Username:",username);
 
   //IF ELSE SAMPLE 
   
@@ -38,7 +38,7 @@ const registerUser = asyncHandler( async (req,res)=>{
   
 
 //findOne method to check if we have a user with the identical email,username,password
-const existedUser = User.findOne({
+const existedUser = await User.findOne({
   $or:[{username} , {email}] // we are using operator here to check multiple fields in the db for instance here we are checking username and email
 })
 
@@ -47,8 +47,16 @@ if(existedUser){
 }
 
 //We get req.files access because of multer while we get req.body from express by default
- const avatarLocalPath =  req.files?.avatar[0]?.path;
- const coverImageLocalPath = req.files?.coverImage[0]?.path;
+// console.log("REQ FILES:", req.files)  // add this
+const avatarLocalPath = req.files?.avatar[0]?.path;
+//  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+ let coverImageLocalPath ;
+
+ if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+
+  coverImageLocalPath = req.files.coverImage[0].path
+ }
 
  //Will throw error on failure 
   if(!avatarLocalPath){
@@ -70,7 +78,7 @@ const user = await User.create({
   coverImage:coverImage?.url || "", //if there's url then url or else empty ""
   email,
   password,
-  username:username.toLowercase()
+  username: username.toLowerCase()
 })
 //Check if the user is created by using find byId
 const createdUser = await User.findById (user._id).select(
