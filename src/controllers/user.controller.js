@@ -3,6 +3,7 @@ import {ApiError} from '../utils/ApiError.js'
 import {User} from '../models/user.model.js'
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { response } from "express";
 
 //A method to generate access and refresh token and return them
 const generateAccessAndRefreshTokens = async(userId)=>{
@@ -197,9 +198,34 @@ return res
 
 
 const logoutUser = asyncHandler(async(req,res)=>{
-      User.find
+     await  User.findByIdAndUpdate(
+        req.user._id,
+        {
+          $set:{
+            refreshToken: undefined
+          }
+        }
+        ,
+        {
+          new:true
+        }
+      )
+
+      const options = {
+  httpOnly: true,
+  secure:true,
+
+
+
+}
+
+return response
+.status(200)
+.clearCookie("accessToken" , options)
+.clearCookie("refreshToken" , options)
+.json(new ApiResponse(200 , {} ,"User Logged Out"))
 })
 
-export {registerUser,loginUser}
+export {registerUser,loginUser,logoutUser}
 
 //send cookies(secure cookies)
