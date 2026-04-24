@@ -3,7 +3,7 @@ import {ApiError} from '../utils/ApiError.js'
 import {User} from '../models/user.model.js'
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { response } from "express";
+
 
 //A method to generate access and refresh token and return them
 const generateAccessAndRefreshTokens = async(userId)=>{
@@ -141,10 +141,10 @@ const loginUser = asyncHandler (async (req,res)=>{
   const {email,username,password} = req.body
 
   //Username based access/ email
-  if(!username || !email){
+  if(!username && !email){
     throw new ApiError(400,"username or email is required!!")
   }
-  
+  console.log("Looking for:", { username, email }) 
   //Find the user
   const user = await User.findOne({
       $or:[{username},{email}]
@@ -219,7 +219,7 @@ const logoutUser = asyncHandler(async(req,res)=>{
 
 }
 
-return response
+return res
 .status(200)
 .clearCookie("accessToken" , options)
 .clearCookie("refreshToken" , options)
