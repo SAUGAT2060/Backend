@@ -4,7 +4,7 @@ import { User } from '../models/user.model.js'
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from 'jsonwebtoken'
-
+import mongoose from 'mongoose'
 //A method to generate access and refresh token and return them
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -139,7 +139,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   //Req-body data :
   const { email, username, password } = req.body
-
+      
   //Username based access/ email
   if (!username && !email) {
     throw new ApiError(400, "username or email is required!!")
@@ -285,7 +285,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
 
 
-  const user = await User.findById(res.user?._id)
+  const user = await User.findById(req.user?._id)
   const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
   if (!isPasswordCorrect) {
@@ -310,7 +310,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
-    .json(200, req.user, "current user fetched successfully!")
+    .json( new ApiResponse (200, req.user, "current user fetched successfully!"))
 
 })
 
@@ -411,7 +411,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 const getUserChannelProfile = asyncHandler(async (req, res) => {
 
   const { username } = req.params
-  if (!username?.trim) {
+  if (!username?.trim()) {
     throw new ApiError(400, "username is missing")
   }
   //Writing db aggregate pipelines
@@ -487,7 +487,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
-        _id: new mongoose.Types.ObjectId(req.user_id)
+        _id: new mongoose.Types.ObjectId(req.user._id)
         //Because aggregation code goes raw and it isn't like mongoose does it for us so we need to change it into types ObjectId
 
       }
