@@ -122,9 +122,70 @@ const getVideoComments = asyncHandler(async (req, res) => {
     )
 })
 
+
+//CRUD
+//Add Comments 
+
+const addComments = asyncHandler(async (req,res)=>{
+
+  /**
+ * STEP 1: Get data from request
+ *         - content  → req.body (comment text user typed)
+ *         - videoId  → req.params (which video is being commented on)
+ *         - owner    → req.user._id (logged in user from verifyJWT)
+ */
+
+const {content} = req.body
+const {videoId} = req.params
+const owner = req.user._id 
+
+
+
+/*
+ * STEP 2: Validate
+ *         - if videoId missing → throw 400
+ *         - if content empty  → throw 400
+ * 
+ */
+
+if(!videoId){
+  throw new ApiError(400, "Invalid Video Id!!")
+}
+
+if(!content){
+throw new ApiError(400,"Content is empty")
+}
+/*
+ *
+ * STEP 3: Create comment in DB
+ *         - Comment.create({ content, video: videoId, owner: req.user._id })
+ */
+ 
+const newComment = await Comment.create({
+  content,
+  video:videoId,
+  owner
+})
+/*
+ * STEP 4: Check if comment was created successfully
+ *         - if not → throw 500 (server error)
+ */ 
+
+if(!newComment){
+  throw new ApiError(500, "Invalid Request, Request Denied!! ")
+}
+/*
+ * STEP 5: Send response back to frontend
+ */
+return res
+.status(200)
+.json(
+  new ApiResponse(200 , newComment, "Comment added SuccessFully!")
+)
+})
 export {
   getVideoComments,
-  // addComments,    → to be built
+   addComments,   
   // updateComments, → to be built
   // deleteComments, → to be built
 }
