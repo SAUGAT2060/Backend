@@ -1,0 +1,130 @@
+import mongoose from 'mongoose'
+import { Comment } from '../models/comment.model.js'
+import { asyncHandler } from '../utils/asyncHandler.js'
+import { ApiError } from '../utils/ApiError.js'
+import { ApiResponse } from '../utils/ApiResponse.js'
+
+const getVideoComments = asyncHandler(async (req, res) => {
+
+  /**
+   * STEP 1: Get videoId from req.params
+   * STEP 2: Get page and limit from req.query for pagination
+   * STEP 3: Validate videoId → throw 400 if missing
+   * STEP 4: Build aggregation pipeline:
+   *         - $match    → filter comments by videoId
+   *         - $lookup   → go to users collection and attach owner details
+   *         - $addFields → unwrap ownerDetails from array to single object using $first
+   *         - $project  → send only content, createdAt, ownerDetails(username, avatar, fullName)
+   *         - $skip     → skip comments based on page using formula (page-1)*limit
+   *         - $limit    → limit how many comments come back per page
+   * STEP 5: Send response back to frontend
+   */
+
+  // STEP 1 & 2: Extract videoId from URL and pagination values from query
+  // videoId tells us which video's comments to fetch
+  // page and limit control how many comments come back at once
+  const { videoId } = req.params
+  const { page = 1, limit = 10 } = req.query
+
+  // Convert to numbers because req.query gives strings
+  // (page-1)*limit would break with strings
+  const pageNum = Number(page)
+  const limitNum = Number(limit)
+
+  // STEP 3: Validate videoId
+  // Without videoId we don't know which video to fetch comments for
+  if (!videoId) {
+    throw new ApiError(400, "Missing videoId - bad request!!")
+  }
+
+  // STEP 4: Aggregation pipeline
+  // We use pipeline because data is scattered across collections
+  // comments collection has comment text
+  // users collection has owner details
+  // pipeline joins them together in one database call
+  const comment = await Comment.aggregate([
+
+    // STAGE 1: $match
+    // Filter down to only comments belonging to this specific video
+    // Must convert videoId string to ObjectId because
+    // aggregation is raw MongoDB and doesn't auto convert
+    {
+      $match: {
+        video: new mongoose.Types.ObjectId(videoId)
+      }
+    },
+
+    // STAGE 2: $lookup
+    // Each comment has owner field which is just a raw ObjectId
+    // Go to users collection and bring back full owner details
+    // Attach them to each comment as ownerDetails array
+    {
+      $lookup: {
+        from: "users",          // collection to go to
+        localField: "owner",    // field in comment that holds user id
+        foreignField: "_id",    // match against _id in users collection
+        as: "ownerDetails",     // name the result
+      }
+    },
+
+    // STAGE 3: $addFields
+    // $lookup always returns an array even for one result
+    // $first unwraps that array into a clean single object
+    // ownerDetails: [{ john }] → ownerDetails: { john }
+    {
+      $addFields: {
+        ownerDetails: {
+          $first: "$ownerDetails"
+        }
+      }
+    },
+
+    // STAGE 4: $project
+    // Control what goes to frontend
+    // Only send what is needed, hide everything sensitive
+    // password and refreshToken are hidden automatically
+    {
+      $project: {
+        content: 1,       // the actual comment text
+        createdAt: 1,     // when comment was posted
+        ownerDetails: {   // nested owner info
+          username: 1,    // who wrote the comment
+          avatar: 1,      // their profile picture
+          fullName: 1     // their display name
+        }
+      }
+    },
+
+    // STAGE 5: $skip
+    // Jump over comments already seen on previous pages
+    // formula: (page - 1) * limit
+    // page 1 → skip 0, page 2 → skip 10, page 3 → skip 20
+    {
+      $skip: (pageNum - 1) * limitNum
+    },
+
+    // STAGE 6: $limit
+    // After skipping, only return this many comments
+    // Prevents sending thousands of comments at once
+    {
+      $limit: limitNum
+    }
+
+  ])
+
+  // STEP 5: Send response back to frontend
+  // comment is an array of paginated comments
+  // each comment has content, createdAt and owner details
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, comment, "Comment fetched Successfully!!")
+    )
+})
+
+export {
+  getVideoComments,
+  // addComments,    → to be built
+  // updateComments, → to be built
+  // deleteComments, → to be built
+}
