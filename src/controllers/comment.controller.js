@@ -188,10 +188,10 @@ const updateComments = asyncHandler(async(req,res)=>{
   
   // Get request from request, url and owner
   const {content} = req.body
-  const {videoId}= req.params
+  const {commentId}= req.params
   const owner = req.user._id
 
-  if(!videoId){
+  if(!commentId){
     throw new ApiError(400,"Invalid Request!")
   }
 
@@ -200,13 +200,38 @@ const updateComments = asyncHandler(async(req,res)=>{
   }
 
 
+//Save to the Database 
+const comment = await Comment.findById(commentId)
+
+//Checking if the comment exists or no 
+if(!comment){
+  throw new ApiError(404,"Comment not found ")
+  
+}
+
+//Checking if the owner of the comment is same
+if(comment.owner.toString()!==owner.toString()){
+  throw new ApiError(403, "You can't update someone else's comment")
+}
+
+//Updating the old comment with the new comment if they match
+const updatedComment = await Comment.findByIdAndUpdate(
+  commentId,
+  {$set:{content}},
+  {new:true}
+)
+
+//Returning response 
+return res
+.status(200)
+.json(new ApiResponse(200, updatedComment, "Comment Updated successfully!"))
+
+
+
 })
 export {
   getVideoComments,
    addComments,   
-
-
-
-  // updateComments, 
+  updateComments,
   // deleteComments, → to be built
 }
