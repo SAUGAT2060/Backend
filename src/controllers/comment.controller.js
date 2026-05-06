@@ -183,9 +183,30 @@ return res
   new ApiResponse(200 , newComment, "Comment added SuccessFully!")
 )
 })
+
+const updateComments = asyncHandler(async(req,res)=>{
+  
+  // Get request from request, url and owner
+  const {content} = req.body
+  const {videoId}= req.params
+  const owner = req.user._id
+
+  if(!videoId){
+    throw new ApiError(400,"Invalid Request!")
+  }
+
+  if(!content){
+    throw new ApiError(400,"Content is empty")
+  }
+
+
+})
 export {
   getVideoComments,
    addComments,   
-  // updateComments, → to be built
+
+
+
+  // updateComments, 
   // deleteComments, → to be built
 }
