@@ -122,7 +122,6 @@ const getVideoComments = asyncHandler(async (req, res) => {
     )
 })
 
-
 //CRUD
 //Add Comments 
 
@@ -225,13 +224,42 @@ const updatedComment = await Comment.findByIdAndUpdate(
 return res
 .status(200)
 .json(new ApiResponse(200, updatedComment, "Comment Updated successfully!"))
-
-
-
 })
+
+const deleteComments =asyncHandler(async(req,res)=>{
+
+  //Comment Id from the url and owner from database
+  const {commentId} = req.params
+  const owner = req.user._id
+
+  //Check if the commentId exists
+  if(!commentId){
+    throw new ApiError(400,"Invalid Request")
+  }
+
+  //Finding the comment in the database and checking if it exists or no
+  const comment = await Comment.findById(commentId)
+
+  if(!comment){
+    throw new ApiError(404, "Comment doesn't exist")
+  }
+  //Checking the ownership 
+  if(comment.owner.toString()!==owner.toString()){
+  throw new ApiError(403, "You can't delete someone else's comment")
+}
+
+
+const deleteComment = await Comment.findByIdAndDelete(commentId)
+
+//Sending response
+return res.
+status(200)
+.json(new ApiResponse(200, {}, "Comment deleted Successfully!"))
+
+}) 
 export {
   getVideoComments,
-   addComments,   
+  addComments,   
   updateComments,
-  // deleteComments, → to be built
+  deleteComments
 }
