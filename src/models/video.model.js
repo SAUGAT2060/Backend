@@ -6,8 +6,6 @@ const videoSchema = new Schema(
     videoFile: {
       type: String, // Cloudinary url
       required: true,
-
-
     },
     thumbnail: {
       type: String,// Cloudinary
@@ -27,13 +25,13 @@ const videoSchema = new Schema(
       required: true,
     }
     ,
-    isPublished:{
-      type:Boolean,
-      default:true
+    isPublished: {
+      type: Boolean,
+      default: true
     },
-    owner:{
-      type:Schema.Types.ObjectId,
-      ref:"User"
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User"
     }
 
 
@@ -41,6 +39,6 @@ const videoSchema = new Schema(
   }, { timestamps: true })
 
 
-  videoSchema.plugin(mongooseAggregatePaginate)
+videoSchema.plugin(mongooseAggregatePaginate)
 
 export const Video = mongoose.model("Video", videoSchema)
